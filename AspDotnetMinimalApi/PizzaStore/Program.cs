@@ -5,11 +5,13 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("Pizzas") ?? "Data Source=Pizzas.db";
+//var connectionString = builder.Configuration.GetConnectionString("Pizzas") ?? "Data Source=Pizzas.db";
+var connectionString = builder.Configuration.GetConnectionString("Pizzas");
 
 // builder.Services.AddDbContext<PizzaDb>(options=> options.UseInMemoryDatabase("items"));
-builder.Services.AddSqlite<PizzaDb>(connectionString);
-    
+// builder.Services.AddSqlite<PizzaDb>(connectionString);
+builder.Services.AddDbContext<PizzaDb>(options => options.UseSqlServer(connectionString));
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -42,6 +44,7 @@ app.MapGet("pizzas", async (PizzaDb db)=> await db.Pizzas.ToListAsync());
     return Results.Created($"/pizza/{p.Id}", p);
  });
 app.MapPut("pizza/{id}", async (PizzaDb db, Pizza p, int id)=> {
+    if(id!=p.Id) return Results.BadRequest();
     var pizza = await db.Pizzas.FindAsync(id);
     if(pizza is null) return Results.NotFound();
     pizza.Name=p.Name;
@@ -56,6 +59,5 @@ app.MapDelete("pizza/{id}", async (PizzaDb db, int id)=> {
     await db.SaveChangesAsync();
     return Results.Ok();
 });
-
 
 app.Run();
